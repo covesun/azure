@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "japaneast" },
+    "appGatewayName": { "value": "agw-poc" },
+    "hostName": { "value": "acme-test.covesun.net" },
+    "agwSubnetId": { "value": "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourceGroups/rg-acme-poc/providers/Microsoft.Network/virtualNetworks/vnet-acme-poc/subnets/snet-agw" },
+    "publicIpId": { "value": "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourceGroups/rg-acme-poc/providers/Microsoft.Network/publicIPAddresses/pip-agw-poc" },
+    "challengeBackendFqdn": { "value": "stacmechald0emijex.z11.web.core.windows.net" }
+  }
+}

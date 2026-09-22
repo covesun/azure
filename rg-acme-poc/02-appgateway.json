@@ -1,0 +1,228 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "appGatewayName": {
+      "type": "string",
+      "defaultValue": "agw-poc"
+    },
+    "hostName": {
+      "type": "string",
+      "defaultValue": "acme-test.covesun.net"
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-acme-poc"
+    },
+    "agwSubnetId": {
+      "type": "string",
+      "metadata": { "description": "01-foundation.json の出力 agwSubnetId をそのまま渡す" }
+    },
+    "publicIpId": {
+      "type": "string",
+      "metadata": { "description": "既存の pip-agw-poc のリソースID" }
+    },
+    "agwIdentityId": {
+      "type": "string",
+      "metadata": { "description": "01-foundation.json の出力 agwIdentityId をそのまま渡す" }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "kv-acme-poc"
+    },
+    "certificateName": {
+      "type": "string",
+      "defaultValue": "acme-test-covesun-net"
+    },
+    "challengeBackendFqdn": {
+      "type": "string",
+      "metadata": { "description": "Storage静的Webサイトのホスト名のみ(https://を含めない)。az storage account show --query primaryEndpoints.web で取得したURLからホスト名部分だけ抜き出す" }
+    }
+  },
+  "variables": {
+    "keyVaultCertSecretId": "[concat('https://', parameters('keyVaultName'), '.vault.azure.net/secrets/', parameters('certificateName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('appGatewayName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('agwIdentityId'))]": {}
+        }
+      },
+      "properties": {
+        "sku": {
+          "name": "Standard_v2",
+          "tier": "Standard_v2",
+          "capacity": 1
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "gwipconfig",
+            "properties": {
+              "subnet": { "id": "[parameters('agwSubnetId')]" }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "feip-public",
+            "properties": {
+              "publicIPAddress": { "id": "[parameters('publicIpId')]" }
+            }
+          }
+        ],
+        "frontendPorts": [
+          { "name": "port-80", "properties": { "port": 80 } },
+          { "name": "port-443", "properties": { "port": 443 } }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "bap-challenge",
+            "properties": {
+              "backendAddresses": [
+                { "fqdn": "[parameters('challengeBackendFqdn')]" }
+              ]
+            }
+          },
+          {
+            "name": "bap-placeholder",
+            "properties": { "backendAddresses": [] }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "bhs-challenge",
+            "properties": {
+              "port": 443,
+              "protocol": "Https",
+              "cookieBasedAffinity": "Disabled",
+              "pickHostNameFromBackendAddress": true,
+              "requestTimeout": 20
+            }
+          },
+          {
+            "name": "bhs-placeholder",
+            "properties": {
+              "port": 80,
+              "protocol": "Http",
+              "cookieBasedAffinity": "Disabled",
+              "requestTimeout": 20
+            }
+          }
+        ],
+        "sslCertificates": [
+          {
+            "name": "cert-acme-test",
+            "properties": {
+              "keyVaultSecretId": "[variables('keyVaultCertSecretId')]"
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "listener-http-80",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('appGatewayName'), 'feip-public')]"
+              },
+              "frontendPort": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', parameters('appGatewayName'), 'port-80')]"
+              },
+              "protocol": "Http",
+              "hostName": "[parameters('hostName')]"
+            }
+          },
+          {
+            "name": "listener-https-443",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('appGatewayName'), 'feip-public')]"
+              },
+              "frontendPort": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', parameters('appGatewayName'), 'port-443')]"
+              },
+              "protocol": "Https",
+              "hostName": "[parameters('hostName')]",
+              "sslCertificate": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/sslCertificates', parameters('appGatewayName'), 'cert-acme-test')]"
+              }
+            }
+          }
+        ],
+        "urlPathMaps": [
+          {
+            "name": "pathmap-http-80",
+            "properties": {
+              "defaultBackendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('appGatewayName'), 'bap-placeholder')]"
+              },
+              "defaultBackendHttpSettings": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('appGatewayName'), 'bhs-placeholder')]"
+              },
+              "pathRules": [
+                {
+                  "name": "path-acme-challenge",
+                  "properties": {
+                    "paths": [ "/.well-known/acme-challenge/*" ],
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('appGatewayName'), 'bap-challenge')]"
+                    },
+                    "backendHttpSettings": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('appGatewayName'), 'bhs-challenge')]"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "name": "rule-http-80",
+            "properties": {
+              "ruleType": "PathBasedRouting",
+              "priority": 100,
+              "httpListener": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('appGatewayName'), 'listener-http-80')]"
+              },
+              "urlPathMap": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/urlPathMaps', parameters('appGatewayName'), 'pathmap-http-80')]"
+              }
+            }
+          },
+          {
+            "name": "rule-https-443",
+            "properties": {
+              "ruleType": "Basic",
+              "priority": 110,
+              "httpListener": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('appGatewayName'), 'listener-https-443')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('appGatewayName'), 'bap-placeholder')]"
+              },
+              "backendHttpSettings": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('appGatewayName'), 'bhs-placeholder')]"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "appGatewayId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/applicationGateways', parameters('appGatewayName'))]"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "japaneast" },
+    "vnetName": { "value": "vnet-acme-poc" },
+    "vnetAddressPrefix": { "value": "10.20.0.0/16" },
+    "agwSubnetPrefix": { "value": "10.20.1.0/24" },
+    "acaSubnetPrefix": { "value": "10.20.2.0/23" },
+    "peSubnetPrefix": { "value": "10.20.4.0/27" },
+    "keyVaultName": { "value": "kv-acme-poc" },
+    "storageAccountName": { "value": "stacmechald0emijex" },
+    "containerAppsEnvName": { "value": "env-acme-poc" },
+    "agwIdentityName": { "value": "id-agw-poc" },
+    "funcIdentityName": { "value": "id-func-poc" },
+    "publicIpName": { "value": "pip-agw-poc" }
+  }
+}
