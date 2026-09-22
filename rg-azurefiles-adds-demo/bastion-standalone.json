@@ -1,0 +1,92 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "azuredeploy.json とは独立して Bastion 関連リソース(AzureBastionSubnet / Public IP / Bastion Host)だけを作成・削除・SKU切替するためのテンプレート。既存の VNet (vnetName) にサブネットを追加するだけで、DC/クライアントVM・AD DS・Storage・Private Endpoint など他のリソースには一切触れない。"
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "japaneast",
+      "metadata": { "description": "デプロイ先リージョン。既存VNetと同じリージョンを指定すること" }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-azurefiles-adds",
+      "metadata": { "description": "サブネットを追加する既存の VNet 名(このテンプレートでは作成しない)" }
+    },
+    "bastionSkuName": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": ["Developer", "Standard"],
+      "metadata": { "description": "Azure Bastion の SKU。Developerは無料でPublic IP/専用サブネット不要。StandardはPublic IP/AzureBastionSubnetが必須で有料" }
+    }
+  },
+  "variables": {
+    "subnetBastionName": "AzureBastionSubnet",
+    "subnetBastionPrefix": "10.0.4.0/26",
+    "bastionHostName": "bastion-azurefiles-adds",
+    "bastionPipName": "pip-bastion-azurefiles-adds",
+    "isBastionStandard": "[equals(parameters('bastionSkuName'), 'Standard')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(parameters('vnetName'), '/', variables('subnetBastionName'))]",
+      "condition": "[variables('isBastionStandard')]",
+      "properties": {
+        "addressPrefix": "[variables('subnetBastionPrefix')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('bastionPipName')]",
+      "location": "[parameters('location')]",
+      "condition": "[variables('isBastionStandard')]",
+      "sku": { "name": "Standard" },
+      "properties": { "publicIPAllocationMethod": "Static" }
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "apiVersion": "2024-05-01",
+      "name": "[variables('bastionHostName')]",
+      "location": "[parameters('location')]",
+      "condition": "[equals(parameters('bastionSkuName'), 'Developer')]",
+      "sku": { "name": "Developer" },
+      "properties": {
+        "virtualNetwork": { "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "apiVersion": "2024-05-01",
+      "name": "[variables('bastionHostName')]",
+      "location": "[parameters('location')]",
+      "condition": "[variables('isBastionStandard')]",
+      "sku": { "name": "Standard" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('subnetBastionName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('bastionPipName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IpConf",
+            "properties": {
+              "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('subnetBastionName'))]" },
+              "publicIPAddress": { "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('bastionPipName'))]" }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "bastionHostName": { "type": "string", "value": "[variables('bastionHostName')]" },
+    "bastionSkuName": { "type": "string", "value": "[parameters('bastionSkuName')]" },
+    "bastionSubnetId": { "type": "string", "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('subnetBastionName'))]" },
+    "bastionPipName": { "type": "string", "value": "[variables('bastionPipName')]" }
+  }
+}

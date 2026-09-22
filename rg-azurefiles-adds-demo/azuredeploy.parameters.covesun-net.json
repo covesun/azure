@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "japaneast" },
+    "adminUsername": { "value": "azureadmin" },
+    "adminPassword": { "value": "<デプロイ時に -parameters adminPassword=<値> 等で上書きすること。' \" ` $ を含めない>" },
+    "domainName": { "value": "corp.covesun.net" },
+    "domainNetBiosName": { "value": "CORP" },
+    "dcVmSize": { "value": "Standard_B2s" },
+    "clientVmSize": { "value": "Standard_B2s" },
+    "storageAccountSkuName": { "value": "Standard_LRS" },
+    "fileShareName": { "value": "file-share-sales" },
+    "fileShareQuotaGiB": { "value": 32 },
+    "fileShareProvisionedIops": { "value": 500 },
+    "fileShareProvisionedBandwidthMibps": { "value": 60 },
+    "bastionSkuName": { "value": "Developer" },
+    "enableAutoShutdown": { "value": true },
+    "autoShutdownTime": { "value": "2200" }
+  }
+}

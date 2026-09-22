@@ -1,0 +1,530 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "オンプレミス AD DS x Azure Files (Private Endpoint 閉域接続) 検証環境。コスト最小化のため B シリーズVM/Standard_LRS/Bastion Developer SKU/自動シャットダウンを既定値としている。"
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "japaneast",
+      "metadata": { "description": "デプロイ先リージョン" }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureadmin",
+      "metadata": { "description": "各VMのローカル管理者 兼 ドメイン管理者として使うアカウント名" }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": { "description": "上記アカウントのパスワード。Safe Mode Administrator Password にも使用される。 ' \" ` $ などの記号は拡張スクリプトのエスケープ都合上、使用を避けること。" }
+    },
+    "domainName": {
+      "type": "string",
+      "defaultValue": "corp.covesun.net",
+      "metadata": { "description": "新規作成する AD DS フォレストの完全修飾ドメイン名。検証済みEntraテナントドメイン(covesun.net)のサブドメインを使うことで、UPNサフィックスの不一致問題を回避している" }
+    },
+    "domainNetBiosName": {
+      "type": "string",
+      "defaultValue": "CORP",
+      "metadata": { "description": "AD DS の NetBIOS ドメイン名" }
+    },
+    "dcVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s",
+      "metadata": { "description": "ドメインコントローラー VM のサイズ。コスト最小化のためBシリーズ(バースト型)を既定値とする" }
+    },
+    "clientVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s",
+      "metadata": { "description": "検証クライアント VM のサイズ" }
+    },
+    "storageAccountSkuName": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": ["Standard_LRS", "Standard_ZRS", "Standard_GRS", "Standard_GZRS"],
+      "metadata": { "description": "Storage Account のレプリケーション方式。検証手順はレプリケーション方式に依存しないため、コスト最小のLRSを既定値とする（元記事はGZRS）" }
+    },
+    "fileShareName": {
+      "type": "string",
+      "defaultValue": "file-share-sales",
+      "metadata": { "description": "Azure Files 共有名" }
+    },
+    "fileShareQuotaGiB": {
+      "type": "int",
+      "defaultValue": 32,
+      "metadata": { "description": "ファイル共有のプロビジョニングサイズ (GiB)" }
+    },
+    "fileShareProvisionedIops": {
+      "type": "int",
+      "defaultValue": 500,
+      "metadata": { "description": "プロビジョニング v2 (HDD) の IOPS" }
+    },
+    "fileShareProvisionedBandwidthMibps": {
+      "type": "int",
+      "defaultValue": 60,
+      "metadata": { "description": "プロビジョニング v2 (HDD) の帯域幅 (MiB/s)" }
+    },
+    "bastionSkuName": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": ["Developer", "Standard"],
+      "metadata": { "description": "Azure Bastion の SKU。Developer SKUは無料でPublic IP/専用サブネット不要（コスト最小・既定値）。Standard SKUはネイティブクライアント接続等フル機能だが有料でPublic IP/AzureBastionSubnetが必要" }
+    },
+    "enableAutoShutdown": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": { "description": "VMの自動シャットダウンスケジュールを有効にするか" }
+    },
+    "autoShutdownTime": {
+      "type": "string",
+      "defaultValue": "2200",
+      "metadata": { "description": "自動シャットダウン時刻 (HHmm, ローカルタイムゾーンはTokyo Standard Time固定)" }
+    }
+  },
+  "variables": {
+    "vnetName": "vnet-azurefiles-adds",
+    "addressPrefix": "10.0.0.0/16",
+    "subnetDcName": "Subnet-DC",
+    "subnetDcPrefix": "10.0.1.0/24",
+    "subnetClientName": "Subnet-Client",
+    "subnetClientPrefix": "10.0.2.0/24",
+    "subnetPeName": "Subnet-PE",
+    "subnetPePrefix": "10.0.3.0/24",
+    "subnetBastionName": "AzureBastionSubnet",
+    "subnetBastionPrefix": "10.0.4.0/26",
+    "dcPrivateIp": "10.0.1.4",
+    "dcVmName": "vm-dc01",
+    "clientVmName": "vm-client01",
+    "dcNicName": "nic-vm-dc01",
+    "clientNicName": "nic-vm-client01",
+    "nsgDcName": "nsg-subnet-dc",
+    "nsgClientName": "nsg-subnet-client",
+    "storageAccountName": "[toLower(substring(concat('stazfiles', uniqueString(resourceGroup().id)), 0, 22))]",
+    "privateDnsZoneName": "privatelink.file.core.windows.net",
+    "privateEndpointName": "[concat(variables('storageAccountName'), '-pe')]",
+    "bastionHostName": "bastion-azurefiles-adds",
+    "bastionPipName": "pip-bastion-azurefiles-adds",
+    "isBastionStandard": "[equals(parameters('bastionSkuName'), 'Standard')]",
+    "subnetsBase": [
+      {
+        "name": "[variables('subnetDcName')]",
+        "properties": {
+          "addressPrefix": "[variables('subnetDcPrefix')]",
+          "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgDcName'))]" }
+        }
+      },
+      {
+        "name": "[variables('subnetClientName')]",
+        "properties": {
+          "addressPrefix": "[variables('subnetClientPrefix')]",
+          "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgClientName'))]" }
+        }
+      },
+      {
+        "name": "[variables('subnetPeName')]",
+        "properties": {
+          "addressPrefix": "[variables('subnetPePrefix')]",
+          "privateEndpointNetworkPolicies": "Disabled"
+        }
+      }
+    ],
+    "subnetsWithBastion": "[concat(variables('subnetsBase'), createArray(createObject('name', variables('subnetBastionName'), 'properties', createObject('addressPrefix', variables('subnetBastionPrefix')))))]",
+    "subnets": "[if(variables('isBastionStandard'), variables('subnetsWithBastion'), variables('subnetsBase'))]",
+    "dnsForwarderScript": "[concat('$deadline=(Get-Date).AddMinutes(20); while((Get-Date) -lt $deadline){ try { if((Get-Service DNS -ErrorAction Stop).Status -eq ''Running'' -and (Get-Service NTDS -ErrorAction Stop).Status -eq ''Running''){break} } catch {}; Start-Sleep -Seconds 15 }; if (-not (Get-DnsServerZone -Name ''privatelink.file.core.windows.net'' -ErrorAction SilentlyContinue)) { for($i=0;$i -lt 5;$i++){ try { Add-DnsServerConditionalForwarderZone -Name ''privatelink.file.core.windows.net'' -MasterServers 168.63.129.16 -ErrorAction Stop; break } catch { Start-Sleep -Seconds 15 } } } ')]",
+    "dnsForwarderScriptBase64": "[base64(variables('dnsForwarderScript'))]",
+    "joinDomainScript": "[concat('$deadline=(Get-Date).AddMinutes(25); while((Get-Date) -lt $deadline){ try { $r = Resolve-DnsName -Name ''', parameters('domainName'), ''' -ErrorAction Stop; break } catch { Start-Sleep -Seconds 15 } }')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('nsgDcName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow-RDP-From-VNet",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('nsgClientName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow-RDP-From-VNet",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgDcName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgClientName'))]"
+      ],
+      "properties": {
+        "addressSpace": { "addressPrefixes": ["[variables('addressPrefix')]"] },
+        "dhcpOptions": { "dnsServers": ["[variables('dcPrivateIp')]"] },
+        "subnets": "[variables('subnets')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('bastionPipName')]",
+      "location": "[parameters('location')]",
+      "condition": "[variables('isBastionStandard')]",
+      "sku": { "name": "Standard" },
+      "properties": { "publicIPAllocationMethod": "Static" }
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "apiVersion": "2024-05-01",
+      "name": "[variables('bastionHostName')]",
+      "location": "[parameters('location')]",
+      "condition": "[equals(parameters('bastionSkuName'), 'Developer')]",
+      "sku": { "name": "Developer" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ],
+      "properties": {
+        "virtualNetwork": { "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "apiVersion": "2024-05-01",
+      "name": "[variables('bastionHostName')]",
+      "location": "[parameters('location')]",
+      "condition": "[variables('isBastionStandard')]",
+      "sku": { "name": "Standard" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('bastionPipName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IpConf",
+            "properties": {
+              "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetBastionName'))]" },
+              "publicIPAddress": { "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('bastionPipName'))]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('dcNicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]" ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('dcPrivateIp')]",
+              "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetDcName'))]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('clientNicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]" ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetClientName'))]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('dcVmName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/networkInterfaces', variables('dcNicName'))]" ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[parameters('dcVmSize')]" },
+        "osProfile": {
+          "computerName": "[variables('dcVmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2022-datacenter-g2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": { "storageAccountType": "Standard_LRS" }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('dcNicName'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(variables('dcVmName'), '/CreateADForest')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Compute/virtualMachines', variables('dcVmName'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.10",
+        "autoUpgradeMinorVersion": true,
+        "settings": {},
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -Command \"', '$b = ''', variables('dnsForwarderScriptBase64'), '''; $bytes = [Convert]::FromBase64String($b); [IO.File]::WriteAllText(''C:\\Windows\\Temp\\ConfigureDnsForwarder.ps1'', [Text.Encoding]::UTF8.GetString($bytes)); $action = New-ScheduledTaskAction -Execute ''powershell.exe'' -Argument ''-ExecutionPolicy Unrestricted -File C:\\Windows\\Temp\\ConfigureDnsForwarder.ps1''; $trigger = New-ScheduledTaskTrigger -AtStartup; Register-ScheduledTask -TaskName ''ConfigureDnsForwarder'' -Action $action -Trigger $trigger -User ''SYSTEM'' -RunLevel Highest -Force | Out-Null; $p = ConvertTo-SecureString ''', parameters('adminPassword'), ''' -AsPlainText -Force; Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools; Import-Module ADDSDeployment; Install-ADDSForest -DomainName ''', parameters('domainName'), ''' -SafeModeAdministratorPassword $p -DomainNetbiosName ''', parameters('domainNetBiosName'), ''' -InstallDns:$true -NoRebootOnCompletion:$true -Force:$true; shutdown -r -t 30', '\"')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('clientVmName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/networkInterfaces', variables('clientNicName'))]" ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[parameters('clientVmSize')]" },
+        "osProfile": {
+          "computerName": "[variables('clientVmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2022-datacenter-g2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": { "storageAccountType": "Standard_LRS" }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('clientNicName'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(variables('clientVmName'), '/WaitForDomain')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('clientVmName'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('dcVmName'), 'CreateADForest')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.10",
+        "autoUpgradeMinorVersion": true,
+        "settings": {},
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -Command \"', variables('joinDomainScript'), '\"')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(variables('clientVmName'), '/JoinADDomain')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('clientVmName'), 'WaitForDomain')]" ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "",
+          "User": "[concat(parameters('domainNetBiosName'), '\\', parameters('adminUsername'))]",
+          "Restart": "true",
+          "Options": "3"
+        },
+        "protectedSettings": {
+          "Password": "[parameters('adminPassword')]"
+        }
+      }
+    },
+    {
+      "condition": "[parameters('enableAutoShutdown')]",
+      "type": "Microsoft.DevTestLab/schedules",
+      "apiVersion": "2018-09-15",
+      "name": "[concat('shutdown-computevm-', variables('dcVmName'))]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Compute/virtualMachines', variables('dcVmName'))]" ],
+      "properties": {
+        "status": "Enabled",
+        "taskType": "ComputeVmShutdownTask",
+        "dailyRecurrence": { "time": "[parameters('autoShutdownTime')]" },
+        "timeZoneId": "Tokyo Standard Time",
+        "notificationSettings": { "status": "Disabled", "timeInMinutes": 30 },
+        "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('dcVmName'))]"
+      }
+    },
+    {
+      "condition": "[parameters('enableAutoShutdown')]",
+      "type": "Microsoft.DevTestLab/schedules",
+      "apiVersion": "2018-09-15",
+      "name": "[concat('shutdown-computevm-', variables('clientVmName'))]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Compute/virtualMachines', variables('clientVmName'))]" ],
+      "properties": {
+        "status": "Enabled",
+        "taskType": "ComputeVmShutdownTask",
+        "dailyRecurrence": { "time": "[parameters('autoShutdownTime')]" },
+        "timeZoneId": "Tokyo Standard Time",
+        "notificationSettings": { "status": "Disabled", "timeInMinutes": 30 },
+        "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('clientVmName'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": { "name": "[parameters('storageAccountSkuName')]" },
+      "properties": {
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": true,
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": { "defaultAction": "Deny" }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(variables('storageAccountName'), '/default/', parameters('fileShareName'))]",
+      "dependsOn": [ "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]" ],
+      "properties": {
+        "shareQuota": "[parameters('fileShareQuotaGiB')]",
+        "enabledProtocols": "SMB",
+        "provisionedIops": "[parameters('fileShareProvisionedIops')]",
+        "provisionedBandwidthMibps": "[parameters('fileShareProvisionedBandwidthMibps')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZoneName')]",
+      "location": "global"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('privateDnsZoneName'), '/link-', variables('vnetName'))]",
+      "location": "global",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": { "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('privateEndpointName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ],
+      "properties": {
+        "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetPeName'))]" },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[variables('privateEndpointName')]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+              "groupIds": ["file"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(variables('privateEndpointName'), '/default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointName'))]",
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneName'))]"
+      ],
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "config1",
+            "properties": { "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneName'))]" }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "storageAccountName": { "type": "string", "value": "[variables('storageAccountName')]" },
+    "fileShareUncPath": { "type": "string", "value": "[concat('\\\\', variables('storageAccountName'), '.file.core.windows.net\\', parameters('fileShareName'))]" },
+    "dcVmName": { "type": "string", "value": "[variables('dcVmName')]" },
+    "clientVmName": { "type": "string", "value": "[variables('clientVmName')]" },
+    "bastionHostName": { "type": "string", "value": "[variables('bastionHostName')]" },
+    "domainName": { "type": "string", "value": "[parameters('domainName')]" }
+  }
+}
