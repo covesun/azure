@@ -1,0 +1,57 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sites_func_acme_poc_name": {
+            "value": null
+        },
+        "vaults_kv_acme_poc_name": {
+            "value": null
+        },
+        "components_func_acme_poc_name": {
+            "value": null
+        },
+        "applicationGateways_agw_poc_name": {
+            "value": null
+        },
+        "managedEnvironments_env_acme_poc_name": {
+            "value": null
+        },
+        "publicIPAddresses_pip_agw_poc_name": {
+            "value": null
+        },
+        "virtualNetworks_vnet_acme_poc_name": {
+            "value": null
+        },
+        "privateEndpoints_pe_kv_acme_poc_name": {
+            "value": null
+        },
+        "networkSecurityGroups_nsg_agw_poc_name": {
+            "value": null
+        },
+        "storageAccounts_stacmechald0emijex_name": {
+            "value": null
+        },
+        "registries_acracmepoc6mgbgs_name": {
+            "value": null
+        },
+        "emailServices_acs_email_acme_poc_name": {
+            "value": null
+        },
+        "communicationServices_acs_acme_poc_name": {
+            "value": null
+        },
+        "userAssignedIdentities_id_agw_poc_name": {
+            "value": null
+        },
+        "userAssignedIdentities_id_func_poc_name": {
+            "value": null
+        },
+        "privateDnsZones_privatelink_vaultcore_azure_net_name": {
+            "value": null
+        },
+        "workspaces_DefaultWorkspace_10a251c5_8576_47f6_bcda_5242f89a5e28_EJP_externalid": {
+            "value": null
+        }
+    }
+}

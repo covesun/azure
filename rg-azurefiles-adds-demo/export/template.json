@@ -1,0 +1,1605 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sites_func_acme_poc_name": {
+            "defaultValue": "func-acme-poc",
+            "type": "String"
+        },
+        "vaults_kv_acme_poc_name": {
+            "defaultValue": "kv-acme-poc",
+            "type": "String"
+        },
+        "components_func_acme_poc_name": {
+            "defaultValue": "func-acme-poc",
+            "type": "String"
+        },
+        "applicationGateways_agw_poc_name": {
+            "defaultValue": "agw-poc",
+            "type": "String"
+        },
+        "managedEnvironments_env_acme_poc_name": {
+            "defaultValue": "env-acme-poc",
+            "type": "String"
+        },
+        "publicIPAddresses_pip_agw_poc_name": {
+            "defaultValue": "pip-agw-poc",
+            "type": "String"
+        },
+        "virtualNetworks_vnet_acme_poc_name": {
+            "defaultValue": "vnet-acme-poc",
+            "type": "String"
+        },
+        "privateEndpoints_pe_kv_acme_poc_name": {
+            "defaultValue": "pe-kv-acme-poc",
+            "type": "String"
+        },
+        "networkSecurityGroups_nsg_agw_poc_name": {
+            "defaultValue": "nsg-agw-poc",
+            "type": "String"
+        },
+        "storageAccounts_stacmechald0emijex_name": {
+            "defaultValue": "stacmechald0emijex",
+            "type": "String"
+        },
+        "registries_acracmepoc6mgbgs_name": {
+            "defaultValue": "acracmepoc6mgbgs",
+            "type": "String"
+        },
+        "emailServices_acs_email_acme_poc_name": {
+            "defaultValue": "acs-email-acme-poc",
+            "type": "String"
+        },
+        "communicationServices_acs_acme_poc_name": {
+            "defaultValue": "acs-acme-poc",
+            "type": "String"
+        },
+        "userAssignedIdentities_id_agw_poc_name": {
+            "defaultValue": "id-agw-poc",
+            "type": "String"
+        },
+        "userAssignedIdentities_id_func_poc_name": {
+            "defaultValue": "id-func-poc",
+            "type": "String"
+        },
+        "privateDnsZones_privatelink_vaultcore_azure_net_name": {
+            "defaultValue": "privatelink.vaultcore.azure.net",
+            "type": "String"
+        },
+        "workspaces_DefaultWorkspace_10a251c5_8576_47f6_bcda_5242f89a5e28_EJP_externalid": {
+            "defaultValue": "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourceGroups/DefaultResourceGroup-EJP/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-10a251c5-8576-47f6-bcda-5242f89a5e28-EJP",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Communication/emailServices",
+            "apiVersion": "2026-03-18",
+            "name": "[parameters('emailServices_acs_email_acme_poc_name')]",
+            "location": "global",
+            "properties": {
+                "dataLocation": "Japan"
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[parameters('registries_acracmepoc6mgbgs_name')]",
+            "location": "japaneast",
+            "sku": {
+                "name": "Basic",
+                "tier": "Basic"
+            },
+            "properties": {
+                "adminUserEnabled": false,
+                "policies": {
+                    "quarantinePolicy": {
+                        "status": "disabled"
+                    },
+                    "trustPolicy": {
+                        "type": "Notary",
+                        "status": "disabled"
+                    },
+                    "retentionPolicy": {
+                        "days": 7,
+                        "status": "disabled"
+                    },
+                    "exportPolicy": {
+                        "status": "enabled"
+                    },
+                    "azureADAuthenticationAsArmPolicy": {
+                        "status": "enabled"
+                    },
+                    "softDeletePolicy": {
+                        "retentionDays": 7,
+                        "status": "disabled"
+                    }
+                },
+                "encryption": {
+                    "status": "disabled"
+                },
+                "dataEndpointEnabled": false,
+                "regionalEndpoints": "Disabled",
+                "endpointProtocol": "IPv4",
+                "publicNetworkAccess": "Enabled",
+                "networkRuleBypassOptions": "AzureServices",
+                "networkRuleBypassAllowedForTasks": false,
+                "zoneRedundancy": "Disabled",
+                "anonymousPullEnabled": false,
+                "metadataSearch": "Disabled",
+                "roleAssignmentMode": "LegacyRegistryPermissions",
+                "autoGeneratedDomainNameLabelScope": "Unsecure",
+                "writableCacheRepos": "Disabled"
+            }
+        },
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2020-02-02",
+            "name": "[parameters('components_func_acme_poc_name')]",
+            "location": "japaneast",
+            "kind": "web",
+            "properties": {
+                "Application_Type": "web",
+                "RetentionInDays": 90,
+                "WorkspaceResourceId": "[parameters('workspaces_DefaultWorkspace_10a251c5_8576_47f6_bcda_5242f89a5e28_EJP_externalid')]",
+                "IngestionMode": "LogAnalytics",
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[parameters('vaults_kv_acme_poc_name')]",
+            "location": "japaneast",
+            "properties": {
+                "sku": {
+                    "family": "A",
+                    "name": "standard"
+                },
+                "tenantId": "ad972c35-ac2b-49d8-bab1-76489ade8a4c",
+                "accessPolicies": [],
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": false,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 7,
+                "enableRbacAuthorization": true,
+                "vaultUri": "[concat('https://', parameters('vaults_kv_acme_poc_name'), '.vault.azure.net/')]",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "apiVersion": "2025-05-31-preview",
+            "name": "[parameters('userAssignedIdentities_id_agw_poc_name')]",
+            "location": "japaneast",
+            "properties": {
+                "isolationScope": "None",
+                "assignmentRestrictions": {
+                    "providers": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "apiVersion": "2025-05-31-preview",
+            "name": "[parameters('userAssignedIdentities_id_func_poc_name')]",
+            "location": "japaneast",
+            "properties": {
+                "isolationScope": "None",
+                "assignmentRestrictions": {
+                    "providers": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('networkSecurityGroups_nsg_agw_poc_name')]",
+            "location": "japaneast",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "Allow-Internet-HTTP-80",
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_agw_poc_name'), 'Allow-Internet-HTTP-80')]",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "80",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "Allow-Internet-HTTPS-443",
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_agw_poc_name'), 'Allow-Internet-HTTPS-443')]",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "Allow-GatewayManager-Inbound",
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_agw_poc_name'), 'Allow-GatewayManager-Inbound')]",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "65200-65535",
+                            "sourceAddressPrefix": "GatewayManager",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 120,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2024-06-01",
+            "name": "[parameters('privateDnsZones_privatelink_vaultcore_azure_net_name')]",
+            "location": "global",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('publicIPAddresses_pip_agw_poc_name')]",
+            "location": "japaneast",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "ipAddress": "20.222.16.127",
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Static",
+                "idleTimeoutInMinutes": 4,
+                "ipTags": [],
+                "ddosSettings": {
+                    "protectionMode": "VirtualNetworkInherited"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2026-04-01",
+            "name": "[parameters('storageAccounts_stacmechald0emijex_name')]",
+            "location": "japaneast",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "allowCrossTenantReplication": false,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": true,
+                "networkAcls": {
+                    "ipv6Rules": [],
+                    "bypass": "None",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.App/managedEnvironments",
+            "apiVersion": "2026-01-01",
+            "name": "[parameters('managedEnvironments_env_acme_poc_name')]",
+            "location": "Japan East",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-aca')]"
+            ],
+            "properties": {
+                "vnetConfiguration": {
+                    "internal": true,
+                    "infrastructureSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-aca')]"
+                },
+                "appLogsConfiguration": {},
+                "zoneRedundant": false,
+                "kedaConfiguration": {},
+                "daprConfiguration": {},
+                "customDomainConfiguration": {},
+                "workloadProfiles": [
+                    {
+                        "workloadProfileType": "Consumption",
+                        "name": "Consumption"
+                    }
+                ],
+                "infrastructureResourceGroup": "[concat('ME_', parameters('managedEnvironments_env_acme_poc_name'), '_rg-acme-poc_japaneast')]",
+                "peerAuthentication": {
+                    "mtls": {
+                        "enabled": false
+                    }
+                },
+                "peerTrafficConfiguration": {
+                    "encryption": {
+                        "enabled": false
+                    }
+                },
+                "publicNetworkAccess": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Communication/communicationServices",
+            "apiVersion": "2026-03-18",
+            "name": "[parameters('communicationServices_acs_acme_poc_name')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_acs_email_acme_poc_name'), 'AzureManagedDomain')]"
+            ],
+            "properties": {
+                "dataLocation": "Japan",
+                "linkedDomains": [
+                    "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_acs_email_acme_poc_name'), 'AzureManagedDomain')]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Communication/emailServices/domains",
+            "apiVersion": "2026-03-18",
+            "name": "[concat(parameters('emailServices_acs_email_acme_poc_name'), '/AzureManagedDomain')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Communication/emailServices', parameters('emailServices_acs_email_acme_poc_name'))]"
+            ],
+            "properties": {
+                "domainManagement": "AzureManaged",
+                "userEngagementTracking": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('registries_acracmepoc6mgbgs_name'), '/_repositories_admin')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_acracmepoc6mgbgs_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read, write and delete operations on the registry",
+                "actions": [
+                    "repositories/*/metadata/read",
+                    "repositories/*/metadata/write",
+                    "repositories/*/content/read",
+                    "repositories/*/content/write",
+                    "repositories/*/content/delete"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('registries_acracmepoc6mgbgs_name'), '/_repositories_pull')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_acracmepoc6mgbgs_name'))]"
+            ],
+            "properties": {
+                "description": "Can pull any repository of the registry",
+                "actions": [
+                    "repositories/*/content/read"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('registries_acracmepoc6mgbgs_name'), '/_repositories_pull_metadata_read')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_acracmepoc6mgbgs_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read operations on the registry",
+                "actions": [
+                    "repositories/*/content/read",
+                    "repositories/*/metadata/read"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('registries_acracmepoc6mgbgs_name'), '/_repositories_push')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_acracmepoc6mgbgs_name'))]"
+            ],
+            "properties": {
+                "description": "Can push to any repository of the registry",
+                "actions": [
+                    "repositories/*/content/read",
+                    "repositories/*/content/write"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('registries_acracmepoc6mgbgs_name'), '/_repositories_push_metadata_write')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_acracmepoc6mgbgs_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read and write operations on the registry",
+                "actions": [
+                    "repositories/*/metadata/read",
+                    "repositories/*/metadata/write",
+                    "repositories/*/content/read",
+                    "repositories/*/content/write"
+                ]
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/degradationindependencyduration')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "degradationindependencyduration",
+                    "DisplayName": "Degradation in dependency duration",
+                    "Description": "Smart Detection rules notify you of performance anomaly issues.",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/degradationinserverresponsetime')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "degradationinserverresponsetime",
+                    "DisplayName": "Degradation in server response time",
+                    "Description": "Smart Detection rules notify you of performance anomaly issues.",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/digestMailConfiguration')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "digestMailConfiguration",
+                    "DisplayName": "Digest Mail Configuration",
+                    "Description": "This rule describes the digest mail preferences",
+                    "HelpUrl": "www.homail.com",
+                    "IsHidden": true,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_billingdatavolumedailyspikeextension')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_billingdatavolumedailyspikeextension",
+                    "DisplayName": "Abnormal rise in daily data volume (preview)",
+                    "Description": "This detection rule automatically analyzes the billing data generated by your application, and can warn you about an unusual increase in your application's billing costs",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/tree/master/SmartDetection/billing-data-volume-daily-spike.md",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_canaryextension')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_canaryextension",
+                    "DisplayName": "Canary extension",
+                    "Description": "Canary extension",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/",
+                    "IsHidden": true,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_exceptionchangeextension')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_exceptionchangeextension",
+                    "DisplayName": "Abnormal rise in exception volume (preview)",
+                    "Description": "This detection rule automatically analyzes the exceptions thrown in your application, and can warn you about unusual patterns in your exception telemetry.",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/abnormal-rise-in-exception-volume.md",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_memoryleakextension')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_memoryleakextension",
+                    "DisplayName": "Potential memory leak detected (preview)",
+                    "Description": "This detection rule automatically analyzes the memory consumption of each process in your application, and can warn you about potential memory leaks or increased memory consumption.",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/tree/master/SmartDetection/memory-leak.md",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_securityextensionspackage')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_securityextensionspackage",
+                    "DisplayName": "Potential security issue detected (preview)",
+                    "Description": "This detection rule automatically analyzes the telemetry generated by your application and detects potential security issues.",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/application-security-detection-pack.md",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/extension_traceseveritydetector')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "extension_traceseveritydetector",
+                    "DisplayName": "Degradation in trace severity ratio (preview)",
+                    "Description": "This detection rule automatically analyzes the trace logs emitted from your application, and can warn you about unusual patterns in the severity of your trace telemetry.",
+                    "HelpUrl": "https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/degradation-in-trace-severity-ratio.md",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/longdependencyduration')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "longdependencyduration",
+                    "DisplayName": "Long dependency duration",
+                    "Description": "Smart Detection rules notify you of performance anomaly issues.",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/migrationToAlertRulesCompleted')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "migrationToAlertRulesCompleted",
+                    "DisplayName": "Migration To Alert Rules Completed",
+                    "Description": "A configuration that controls the migration state of Smart Detection to Smart Alerts",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": true,
+                    "IsEnabledByDefault": false,
+                    "IsInPreview": true,
+                    "SupportsEmailNotifications": false
+                },
+                "enabled": false,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/slowpageloadtime')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "slowpageloadtime",
+                    "DisplayName": "Slow page load time",
+                    "Description": "Smart Detection rules notify you of performance anomaly issues.",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "microsoft.insights/components/ProactiveDetectionConfigs",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[concat(parameters('components_func_acme_poc_name'), '/slowserverresponsetime')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', parameters('components_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "ruleDefinitions": {
+                    "Name": "slowserverresponsetime",
+                    "DisplayName": "Slow server response time",
+                    "Description": "Smart Detection rules notify you of performance anomaly issues.",
+                    "HelpUrl": "https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics",
+                    "IsHidden": false,
+                    "IsEnabledByDefault": true,
+                    "IsInPreview": false,
+                    "SupportsEmailNotifications": true
+                },
+                "enabled": true,
+                "sendEmailsToSubscriptionOwners": true,
+                "customEmails": []
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/keys",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('vaults_kv_acme_poc_name'), '/acme-test-covesun-net')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_kv_acme_poc_name'))]"
+            ],
+            "properties": {
+                "attributes": {
+                    "enabled": true,
+                    "nbf": 1790030241,
+                    "exp": 1797806240
+                }
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/privateEndpointConnections",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('vaults_kv_acme_poc_name'), '/pe-kv-connection')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_kv_acme_poc_name'))]"
+            ],
+            "properties": {
+                "privateEndpoint": {},
+                "privateLinkServiceConnectionState": {
+                    "status": "Approved",
+                    "actionsRequired": "None"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2026-03-01-preview",
+            "name": "[concat(parameters('vaults_kv_acme_poc_name'), '/acme-test-covesun-net')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_kv_acme_poc_name'))]"
+            ],
+            "properties": {
+                "contentType": "application/x-pkcs12",
+                "attributes": {
+                    "enabled": true,
+                    "nbf": 1790030241,
+                    "exp": 1797806240
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('networkSecurityGroups_nsg_agw_poc_name'), '/Allow-GatewayManager-Inbound')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]"
+            ],
+            "properties": {
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "65200-65535",
+                "sourceAddressPrefix": "GatewayManager",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 120,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('networkSecurityGroups_nsg_agw_poc_name'), '/Allow-Internet-HTTP-80')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]"
+            ],
+            "properties": {
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "80",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 100,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('networkSecurityGroups_nsg_agw_poc_name'), '/Allow-Internet-HTTPS-443')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]"
+            ],
+            "properties": {
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "443",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 110,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/A",
+            "apiVersion": "2024-06-01",
+            "name": "[concat(parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'), '/kv-acme-poc')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'))]"
+            ],
+            "properties": {
+                "metadata": {
+                    "creator": "created by private endpoint pe-kv-acme-poc with resource guid e0e62c6b-4643-4f92-9cfb-1c6e1d0098e7"
+                },
+                "ttl": 10,
+                "aRecords": [
+                    {
+                        "ipv4Address": "10.20.4.4"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/SOA",
+            "apiVersion": "2024-06-01",
+            "name": "[concat(parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'), '/@')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'))]"
+            ],
+            "properties": {
+                "ttl": 3600,
+                "soaRecord": {
+                    "email": "azureprivatedns-host.microsoft.com",
+                    "expireTime": 2419200,
+                    "host": "azureprivatedns.net",
+                    "minimumTtl": 10,
+                    "refreshTime": 3600,
+                    "retryTime": 300,
+                    "serialNumber": 1
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_acme_poc_name'), '/snet-aca')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_acme_poc_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.20.2.0/23",
+                "delegations": [
+                    {
+                        "name": "aca-delegation",
+                        "id": "[concat(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-aca'), '/delegations/aca-delegation')]",
+                        "properties": {
+                            "serviceName": "Microsoft.App/environments"
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets/delegations"
+                    }
+                ],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_acme_poc_name'), '/snet-pe')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_acme_poc_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.20.4.0/27",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "staticWebsite": {
+                    "enabled": true,
+                    "indexDocument": "index.html",
+                    "errorDocument404Path": "404.html"
+                },
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "allowPermanentDelete": false,
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "protocolSettings": {
+                    "smb": {}
+                },
+                "cors": {
+                    "corsRules": []
+                },
+                "shareDeleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/queueServices",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/tableServices",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/functions",
+            "apiVersion": "2024-11-01",
+            "name": "[concat(parameters('sites_func_acme_poc_name'), '/CertbotRenew')]",
+            "location": "Japan East",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_func_acme_poc_name'))]"
+            ],
+            "properties": {
+                "script_href": "https://func-acme-poc.whitemeadow-e457afb4.japaneast.azurecontainerapps.io/admin/vfs/home/site/wwwroot/function_app.py",
+                "test_data_href": "https://func-acme-poc.whitemeadow-e457afb4.japaneast.azurecontainerapps.io/admin/vfs/tmp/FunctionsData/CertbotRenew.dat",
+                "href": "https://func-acme-poc.whitemeadow-e457afb4.japaneast.azurecontainerapps.io/admin/functions/CertbotRenew",
+                "config": {
+                    "name": "CertbotRenew",
+                    "entryPoint": "CertbotRenew",
+                    "scriptFile": "function_app.py",
+                    "language": "python",
+                    "functionDirectory": "/home/site/wwwroot",
+                    "bindings": [
+                        {
+                            "direction": "IN",
+                            "type": "timerTrigger",
+                            "name": "mytimer",
+                            "schedule": "%CERTBOT_SCHEDULE%",
+                            "runOnStartup": true,
+                            "useMonitor": true
+                        }
+                    ]
+                },
+                "language": "python",
+                "isDisabled": false
+            }
+        },
+        {
+            "type": "microsoft.communication/emailservices/domains/senderusernames",
+            "apiVersion": "2026-03-18",
+            "name": "[concat(parameters('emailServices_acs_email_acme_poc_name'), '/azuremanageddomain/donotreply')]",
+            "dependsOn": [
+                "[resourceId('microsoft.communication/emailservices/domains', parameters('emailServices_acs_email_acme_poc_name'), 'azuremanageddomain')]",
+                "[resourceId('microsoft.communication/emailservices', parameters('emailServices_acs_email_acme_poc_name'))]"
+            ],
+            "properties": {
+                "username": "DoNotReply",
+                "displayName": "ACME PoC Notifier"
+            }
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('applicationGateways_agw_poc_name')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-agw')]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_pip_agw_poc_name'))]"
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourcegroups/rg-acme-poc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-agw-poc": {}
+                }
+            },
+            "properties": {
+                "sku": {
+                    "name": "Standard_v2",
+                    "tier": "Standard_v2",
+                    "family": "Generation_1",
+                    "capacity": 1
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gwipconfig",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/gatewayIPConfigurations/gwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-agw')]"
+                            }
+                        }
+                    }
+                ],
+                "sslCertificates": [
+                    {
+                        "name": "cert-acme-test",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/sslCertificates/cert-acme-test')]",
+                        "properties": {
+                            "keyVaultSecretId": "https://kv-acme-poc.vault.azure.net/secrets/acme-test-covesun-net"
+                        }
+                    }
+                ],
+                "trustedRootCertificates": [],
+                "trustedClientCertificates": [],
+                "sslProfiles": [],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "feip-public",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendIPConfigurations/feip-public')]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_pip_agw_poc_name'))]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "port-80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendPorts/port-80')]",
+                        "properties": {
+                            "port": 80
+                        }
+                    },
+                    {
+                        "name": "port-443",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendPorts/port-443')]",
+                        "properties": {
+                            "port": 443
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "bap-challenge",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendAddressPools/bap-challenge')]",
+                        "properties": {
+                            "backendAddresses": [
+                                {
+                                    "fqdn": "stacmechald0emijex.z11.web.core.windows.net"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "bap-placeholder",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendAddressPools/bap-placeholder')]",
+                        "properties": {
+                            "backendAddresses": []
+                        }
+                    }
+                ],
+                "loadDistributionPolicies": [],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "bhs-challenge",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendHttpSettingsCollection/bhs-challenge')]",
+                        "properties": {
+                            "port": 443,
+                            "protocol": "Https",
+                            "cookieBasedAffinity": "Disabled",
+                            "pickHostNameFromBackendAddress": true,
+                            "dedicatedBackendConnection": false,
+                            "validateCertChainAndExpiry": true,
+                            "validateSNI": true,
+                            "requestTimeout": 20
+                        }
+                    },
+                    {
+                        "name": "bhs-placeholder",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendHttpSettingsCollection/bhs-placeholder')]",
+                        "properties": {
+                            "port": 80,
+                            "protocol": "Http",
+                            "cookieBasedAffinity": "Disabled",
+                            "pickHostNameFromBackendAddress": false,
+                            "dedicatedBackendConnection": false,
+                            "validateCertChainAndExpiry": true,
+                            "validateSNI": true,
+                            "requestTimeout": 20
+                        }
+                    }
+                ],
+                "backendSettingsCollection": [],
+                "httpListeners": [
+                    {
+                        "name": "listener-http-80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/httpListeners/listener-http-80')]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendIPConfigurations/feip-public')]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendPorts/port-80')]"
+                            },
+                            "protocol": "Http",
+                            "hostName": "acme-test.covesun.net",
+                            "hostNames": [],
+                            "requireServerNameIndication": false
+                        }
+                    },
+                    {
+                        "name": "listener-https-443",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/httpListeners/listener-https-443')]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendIPConfigurations/feip-public')]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/frontendPorts/port-443')]"
+                            },
+                            "protocol": "Https",
+                            "sslCertificate": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/sslCertificates/cert-acme-test')]"
+                            },
+                            "hostName": "acme-test.covesun.net",
+                            "hostNames": [],
+                            "requireServerNameIndication": false
+                        }
+                    }
+                ],
+                "listeners": [],
+                "urlPathMaps": [
+                    {
+                        "name": "pathmap-http-80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/urlPathMaps/pathmap-http-80')]",
+                        "properties": {
+                            "defaultBackendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendAddressPools/bap-placeholder')]"
+                            },
+                            "defaultBackendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendHttpSettingsCollection/bhs-placeholder')]"
+                            },
+                            "pathRules": [
+                                {
+                                    "name": "path-acme-challenge",
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/urlPathMaps/pathmap-http-80/pathRules/path-acme-challenge')]",
+                                    "properties": {
+                                        "paths": [
+                                            "/.well-known/acme-challenge/*"
+                                        ],
+                                        "backendAddressPool": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendAddressPools/bap-challenge')]"
+                                        },
+                                        "backendHttpSettings": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendHttpSettingsCollection/bhs-challenge')]"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "rule-http-80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/requestRoutingRules/rule-http-80')]",
+                        "properties": {
+                            "ruleType": "PathBasedRouting",
+                            "priority": 100,
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/httpListeners/listener-http-80')]"
+                            },
+                            "urlPathMap": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/urlPathMaps/pathmap-http-80')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "rule-https-443",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/requestRoutingRules/rule-https-443')]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "priority": 110,
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/httpListeners/listener-https-443')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendAddressPools/bap-placeholder')]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/backendHttpSettingsCollection/bhs-placeholder')]"
+                            }
+                        }
+                    }
+                ],
+                "routingRules": [],
+                "probes": [],
+                "rewriteRuleSets": [],
+                "redirectConfigurations": [],
+                "privateLinkConfigurations": [],
+                "entraJWTValidationConfigs": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2024-06-01",
+            "name": "[concat(parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'), '/link-to-vnet-acme-poc')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_acme_poc_name'))]"
+            ],
+            "properties": {
+                "registrationEnabled": false,
+                "resolutionPolicy": "Default",
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_acme_poc_name'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('privateEndpoints_pe_kv_acme_poc_name')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_kv_acme_poc_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-pe')]"
+            ],
+            "properties": {
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "pe-kv-connection",
+                        "id": "[concat(resourceId('Microsoft.Network/privateEndpoints', parameters('privateEndpoints_pe_kv_acme_poc_name')), '/privateLinkServiceConnections/pe-kv-connection')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_kv_acme_poc_name'))]",
+                            "groupIds": [
+                                "vault"
+                            ],
+                            "privateLinkServiceConnectionState": {
+                                "status": "Approved",
+                                "actionsRequired": "None"
+                            }
+                        }
+                    }
+                ],
+                "manualPrivateLinkServiceConnections": [],
+                "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-pe')]"
+                },
+                "ipConfigurations": [],
+                "customDnsConfigs": [],
+                "ipVersionType": "IPv4"
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('privateEndpoints_pe_kv_acme_poc_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('privateEndpoints_pe_kv_acme_poc_name'))]",
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'))]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "vaultcore-config",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_privatelink_vaultcore_azure_net_name'))]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('virtualNetworks_vnet_acme_poc_name')]",
+            "location": "japaneast",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.20.0.0/16"
+                    ]
+                },
+                "privateEndpointVNetPolicies": "Disabled",
+                "subnets": [
+                    {
+                        "name": "snet-agw",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-agw')]",
+                        "properties": {
+                            "addressPrefix": "10.20.1.0/24",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]"
+                            },
+                            "applicationGatewayIPConfigurations": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/gatewayIPConfigurations/gwipconfig')]"
+                                }
+                            ],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "snet-aca",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-aca')]",
+                        "properties": {
+                            "addressPrefix": "10.20.2.0/23",
+                            "delegations": [
+                                {
+                                    "name": "aca-delegation",
+                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-aca'), '/delegations/aca-delegation')]",
+                                    "properties": {
+                                        "serviceName": "Microsoft.App/environments"
+                                    },
+                                    "type": "Microsoft.Network/virtualNetworks/subnets/delegations"
+                                }
+                            ],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "snet-pe",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_acme_poc_name'), 'snet-pe')]",
+                        "properties": {
+                            "addressPrefix": "10.20.4.0/27",
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default/$web')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_stacmechald0emijex_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "properties": {
+                "immutableStorageWithVersioning": {
+                    "enabled": false
+                },
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default/azure-webjobs-hosts')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_stacmechald0emijex_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "properties": {
+                "immutableStorageWithVersioning": {
+                    "enabled": false
+                },
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2026-04-01",
+            "name": "[concat(parameters('storageAccounts_stacmechald0emijex_name'), '/default/azure-webjobs-secrets')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_stacmechald0emijex_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_stacmechald0emijex_name'))]"
+            ],
+            "properties": {
+                "immutableStorageWithVersioning": {
+                    "enabled": false
+                },
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2024-11-01",
+            "name": "[parameters('sites_func_acme_poc_name')]",
+            "location": "Japan East",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentities_id_func_poc_name'))]",
+                "[resourceId('Microsoft.App/managedEnvironments', parameters('managedEnvironments_env_acme_poc_name'))]"
+            ],
+            "tags": {
+                "hidden-link: /app-insights-resource-id": "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourceGroups/rg-acme-poc/providers/microsoft.insights/components/func-acme-poc"
+            },
+            "kind": "functionapp,linux,container,azurecontainerapps",
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourcegroups/rg-acme-poc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-func-poc": {}
+                }
+            },
+            "properties": {
+                "siteConfig": {
+                    "linuxFxVersion": "DOCKER|acracmepoc6mgbgs.azurecr.io/acme-certbot:latest",
+                    "acrUseManagedIdentityCreds": true,
+                    "acrUserManagedIdentityID": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentities_id_func_poc_name'))]",
+                    "functionAppScaleLimit": 10,
+                    "minimumElasticInstanceCount": 0
+                },
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('managedEnvironments_env_acme_poc_name'))]",
+                "workloadProfileName": "Consumption",
+                "resourceConfig": {
+                    "cpu": 1,
+                    "memory": "2Gi"
+                },
+                "httpsOnly": true,
+                "storageAccountRequired": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2024-11-01",
+            "name": "[concat(parameters('sites_func_acme_poc_name'), '/web')]",
+            "location": "Japan East",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_func_acme_poc_name'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentities_id_func_poc_name'))]"
+            ],
+            "tags": {
+                "hidden-link: /app-insights-resource-id": "/subscriptions/10a251c5-8576-47f6-bcda-5242f89a5e28/resourceGroups/rg-acme-poc/providers/microsoft.insights/components/func-acme-poc"
+            },
+            "properties": {
+                "linuxFxVersion": "DOCKER|acracmepoc6mgbgs.azurecr.io/acme-certbot:latest",
+                "acrUseManagedIdentityCreds": true,
+                "acrUserManagedIdentityID": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentities_id_func_poc_name'))]",
+                "functionAppScaleLimit": 10,
+                "minimumElasticInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_acme_poc_name'), '/snet-agw')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_acme_poc_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.20.1.0/24",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_agw_poc_name'))]"
+                },
+                "applicationGatewayIPConfigurations": [
+                    {
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_agw_poc_name')), '/gatewayIPConfigurations/gwipconfig')]"
+                    }
+                ],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        }
+    ]
+}
