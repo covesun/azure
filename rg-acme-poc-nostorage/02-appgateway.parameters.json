@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "japaneast" },
+    "appGatewayName": { "value": "agw-poc" },
+    "hostName": { "value": "acme-test2.covesun.net" },
+    "vnetName": { "value": "vnet-acme-poc" },
+    "agwSubnetId": { "value": "<01-foundation.json の出力 agwSubnetId をここに貼る>" },
+    "publicIpId": { "value": "<pip-agw-poc のリソースIDをここに貼る>" },
+    "agwIdentityId": { "value": "<01-foundation.json の出力 agwIdentityId をここに貼る>" },
+    "keyVaultName": { "value": "kv-acme-poc" },
+    "certificateName": { "value": "acme-test2-covesun-net" },
+    "challengeBackendFqdn": { "value": "<func-acme-poc-li0cfu.xxxxxxxx.japaneast.azurecontainerapps.io のようなFunction Appの内部FQDN。az functionapp show --query defaultHostName で取得した実際の値に置き換える>" }
+  }
+}
